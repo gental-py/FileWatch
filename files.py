@@ -1,89 +1,96 @@
-import display
+"""
+Module: files.py
+Manages program files like logs and config.
+"""
+
 import getpass
-import config
 import json
 import os
 import re
 
-ALL_DISKS = [ full_disk_name[0] for full_disk_name in re.findall( r"[A-Z]+:.*$", os.popen("mountvol /").read(), re.MULTILINE )]
+import display
+import config
+
+ALL_DISKS = [ 
+            full_disk_name[0] for full_disk_name in
+            re.findall(
+                r"[A-Z]+:.*$", os.popen("mountvol /").read(),
+                re.MULTILINE
+            ) 
+            ]
+
 MAIN_DIRECTORY = f"C:\\Users\\{getpass.getuser()}\\AppData\\Local\\FILES STRUCT LOGS\\"
-SPECIAL_LOGS_FILE_PATH = MAIN_DIRECTORY + "sepcials.log"
+SPECIAL_LOGS_FILE_PATH = MAIN_DIRECTORY + "specials.log"
 CONFIG_FILE_PATH = MAIN_DIRECTORY + "config.json"
 
 
-def bytesToGigabytes(bytes: int) -> float:
+def bytes_to_gigabytes(bytes_value: int) -> float:
     """ Convert bytes to Gigabytes. """
-    return bytes / 1073741824
+    return bytes_value / 1073741824
 
-def getAllLogsFilesPaths() -> list:
+def get_all_logs_files_paths() -> list:
     """ Generate paths to all logs files. """
 
     paths = [SPECIAL_LOGS_FILE_PATH]
 
     # Add all disk's logs files.
     for disk in ALL_DISKS:
-        paths.append(makePathForDisk(disk))
+        paths.append(make_path_for_disk(disk))
 
     return paths
 
-def isExisting(file_path: str) -> bool:
+def is_existing(file_path: str) -> bool:
     """ Check if file with given path exists. """
     return os.path.exists(file_path)
 
-def createFile(file_path: str):
+def create_file(file_path: str):
     """ Create file with given file_path. """
-    open(file_path, "a+").close()
+    open(file_path, "a+", encoding="utf-8").close()
 
-def createDirectory(dir_path: str):
+def create_directory(dir_path: str):
     """ Create directory with given dir_path. """
     os.mkdir(dir_path)
 
-def makePathForDisk(letter: str):
+def make_path_for_disk(letter: str):
     """ Return path as a str for disk's log file. """
     return MAIN_DIRECTORY + letter + ".log"
 
-def checkFiles() -> list[str]:
-    """ Check all needed files existance and create missing ones.
-        
-        >return (list[str]): List of created files. Used to display information.
-    """
-
-    created_objects = []
+def check_program_files():
+    """ Check all needed files existence and create missing ones. """
 
     # Check main directory in appdata.
-    if not isExisting(MAIN_DIRECTORY):
-        createDirectory(MAIN_DIRECTORY)
-        created_objects.append("Main directory")
+    if not is_existing(MAIN_DIRECTORY):
+        create_directory(MAIN_DIRECTORY)
 
     # Check file for all disks.
     for disk in ALL_DISKS :
-        if not isExisting(MAIN_DIRECTORY + disk + ".log"):
-            created_objects.append(f"Log file for: {disk}")
-            createFile(MAIN_DIRECTORY + disk + ".log")
+        if not is_existing(make_path_for_disk(disk)):
+            create_file(make_path_for_disk(disk))
 
     # Check config file.
-    if not isExisting(CONFIG_FILE_PATH):
-        created_objects.append("User config file")
-        createFile(CONFIG_FILE_PATH)
+    if not is_existing(CONFIG_FILE_PATH):
+        create_file(CONFIG_FILE_PATH)
 
-        with open(CONFIG_FILE_PATH, 'w+') as file:
+        with open(CONFIG_FILE_PATH, 'w+', encoding="utf-8") as file:
             json.dump(config.DEFAULT_CONFIG, file, indent=4, separators=(',',': '))
 
     # Check special logs file.
-    if not isExisting(SPECIAL_LOGS_FILE_PATH):
-        created_objects.append("Special logs file")
-        createFile(SPECIAL_LOGS_FILE_PATH)
+    if not is_existing(SPECIAL_LOGS_FILE_PATH):
+        create_file(SPECIAL_LOGS_FILE_PATH)
 
-    return created_objects
+def control_files_size(alert_size_gb):
+    """ Check if log files are bigger than max size and alert bigger files.
 
-def controlFilesSize(alert_size_gb):
-    """ Check if log files are bigger than max size and alert bigger files. 
-
-        @alert_size_gb (numeric): Part of user config, represents size needed to achive to display alert.
+        @alert_size_gb (numeric): Part of user config,
+         represents size needed to achieve to display alert.
     """
-    paths = getAllLogsFilesPaths()
+    paths = get_all_logs_files_paths()
 
     for path in paths:
-        size_gb = bytesToGigabytes(os.path.getsize(path))
+        size_gb = bytes_to_gigabytes(os.path.getsize(path))
+
         if size_gb >= alert_size_gb:
-            display.warning(f"Logs file size alert", f"File: {os.path.basename(path)} got alert size: {size_gb} Gb!")
+            display.message_box_warning(
+                "Logs file size alert",
+                f"File: {os.path.basename(path)} got alert size: {size_gb} Gb!"
+            )

@@ -22,7 +22,7 @@ class DiskHandler(FileSystemEventHandler):
                 self.path = path + ":\\"
         self.config = configuration
         self.is_special = is_special
-        self.log_path = files.SPECIAL_LOGS_FILE_PATH if is_special else files.makePathForDisk(path) 
+        self.log_path = files.SPECIAL_LOGS_FILE_PATH if is_special else files.make_path_for_disk(path) 
         self.initWatchdog()
 
     def initWatchdog(self):
@@ -34,32 +34,32 @@ class DiskHandler(FileSystemEventHandler):
             while 1:
                 pass
         finally:
-            display.warning(f"{self.path}'s disk handler", "Main watchdog loop has been terminated.")
+            display.message_box_warning(f"{self.path}'s disk handler", "Main watchdog loop has been terminated.")
             observer.stop()
             observer.join()
 
     def logEvent(self, event):
-        log = logs.formatLog(event)
+        log = logs.format_log(event)
 
         # Check if src_path is in registered as special.
-        if event.src_path in self.config.SPECIALS:
-            logs.writeLog(files.SPECIAL_LOGS_FILE_PATH, log)
+        if event.src_path in self.config.specials:
+            logs.write_log(files.SPECIAL_LOGS_FILE_PATH, log)
 
         # Skip logs with temp phrase in it.
-        if self.config.SKIP_TEMP:
-            if logs.isPhraseInLog(logs.temp_phrases, log):
+        if self.config.skip_temp:
+            if logs.is_any_phrase_in_log(logs.TEMP_PHRASES, log):
                 return
         
         # Skip logs with log phrase in it.
-        if self.config.SKIP_LOG:
-            if logs.isPhraseInLog(logs.log_phrases, log):
+        if self.config.skip_log:
+            if logs.is_any_phrase_in_log(logs.LOG_PHRASES, log):
                 return   
 
-        if logs.isPhraseInLog(self.config.SKIP_CUSTOM, log):
+        if logs.is_any_phrase_in_log(self.config.skip_custom, log):
             return
 
         # Save log to file.
-        logs.writeLog(self.log_path, log)
+        logs.write_log(self.log_path, log)
 
 
     # ---- LOG EVENTS ---- #
@@ -73,5 +73,5 @@ class DiskHandler(FileSystemEventHandler):
         self.logEvent(event)
 
     def on_modified(self, event): 
-        if self.config.LOG_EDITS:
+        if self.config.log_edits:
             self.logEvent(event)
